@@ -69,6 +69,7 @@ function App() {
       {result && (
         <div className="result">
           <h2>Result:</h2>
+          {console.log(result)}
           <pre>{JSON.stringify(result, null, 2)}</pre>
         </div>
       )}
