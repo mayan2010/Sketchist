@@ -9,12 +9,32 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
 
+  // Validate file upload type
+  const validateFileType = (file) => {
+    const allowedTypes = ['image/jpeg', 'image/png']
+    const fileType = file?.type || ''
+    if (allowedTypes.includes(fileType)) return true
+
+    // Fallback: check file extension when MIME type is missing/incorrect
+    const ext = file?.name?.split('.').pop()?.toLowerCase()
+    if (['jpg', 'jpeg', 'png'].includes(ext)) return true
+
+    throw new Error('Invalid file type. Please upload a JPEG or PNG image.')
+  }
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
-      setFile(selectedFile)
-      setPreview(URL.createObjectURL(selectedFile))
-      setError(null)
+      try {
+        validateFileType(selectedFile)
+        setFile(selectedFile)
+        setPreview(URL.createObjectURL(selectedFile))
+        setError(null)
+      } catch (err) {
+        setError(err.message)
+        setFile(null)
+        setPreview(null)
+      }
     }
   }
 
@@ -25,8 +45,18 @@ function App() {
       return
     }
 
+    // Validate again before uploading
+    try {
+      validateFileType(file)
+    } catch (err) {
+      setError(err.message)
+      return
+    }
+
     const formData = new FormData()
     formData.append('image', file)
+    formData.append('type', file.name.split('.').pop())
+    
 
     setLoading(true)
     setError(null)
@@ -39,7 +69,7 @@ function App() {
       })
       setResult(response.data)
     } catch (err) {
-      console.log(">>>>>>>",err)
+      console.log(">>>>>>>", err)
       setError(err.response?.data?.message || 'Failed to process image')
     } finally {
       setLoading(false)
@@ -53,7 +83,7 @@ function App() {
       <form onSubmit={handleSubmit} className="upload-form">
         <input
           type="file"
-          accept="image/*"
+          accept="image/png, image/jpeg"
           onChange={handleFileChange}
           disabled={loading}
         />
@@ -62,7 +92,7 @@ function App() {
         </button>
       </form>
 
-      {preview && <img src={preview} alt="Preview" className="preview" />}
+      {preview && <img src={preview} alt="Preview" className="preview" onError={() => { setError('Unable to preview image. Please upload a valid PNG or JPEG.'); setPreview(null); setFile(null); }} />}
 
       {error && <p className="error">{error}</p>}
 
